@@ -32,20 +32,6 @@ export function Sidebar() {
           ))}
         </nav>
 
-        {/* Mobile bottom tab bar uses same links */}
-        <nav className="tab-bar">
-          {NAV.map(({ to, icon, label, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              className={({ isActive }) => `tab-item${isActive ? ' active' : ''}`}
-            >
-              <Icon name={icon} size={20} />
-              <span>{label}</span>
-            </NavLink>
-          ))}
-        </nav>
       </div>
 
       <div className="sidebar-foot">
