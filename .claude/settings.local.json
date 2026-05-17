@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx shadcn@latest init --defaults)",
+      "Bash(npx shadcn@latest add card dialog input label select badge tabs table separator toast progress)",
+      "Bash(npm list *)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); p=d.get\\('packages',{}\\); print\\({k:v for k,v in p.items\\(\\) if 'tslib' in k}\\)\")",
+      "Read(//Users/con/Dev/node_modules/**)",
+      "Read(//Users/con/node_modules/**)",
+      "Bash(node -e \"require\\('tslib'\\)\")",
+      "Bash(npm cache *)",
+      "Bash(node -e \"require\\('tslib'\\); console.log\\('ok'\\)\")",
+      "Bash(npx shadcn@latest add card dialog input label select badge tabs table separator toast progress --overwrite)",
+      "Bash(npx shadcn@latest add card dialog input label select badge tabs table separator sonner progress --overwrite)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
+      "Bash(mkdir -p /Users/con/Dev/accountable/src/components/ui && cp /Users/con/Dev/accountable/@/components/ui/*.tsx /Users/con/Dev/accountable/src/components/ui/ && rm -rf \"/Users/con/Dev/accountable/@\")",
+      "Bash(ipconfig getifaddr *)",
+      "Bash(pkill -f \"vite --port 5173\")",
+      "Bash(npx shadcn@latest add skeleton)"
+    ],
+    "additionalDirectories": [
+      "/Users/con/Dev/accountable/@/components/ui"
+    ]
+  }
+}
