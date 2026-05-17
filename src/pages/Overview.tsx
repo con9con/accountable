@@ -273,6 +273,7 @@ export function Overview() {
                 Recent Payments
               </CardHead>
               <CardBody style={{ padding: 0 }}>
+                <div className="tbl-wrap">
                 <table className="tbl">
                   <tbody>
                     {recentPayments.map((p) => {
@@ -292,6 +293,7 @@ export function Overview() {
                     })}
                   </tbody>
                 </table>
+                </div>
               </CardBody>
             </Card>
           )}

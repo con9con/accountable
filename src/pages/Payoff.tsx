@@ -222,6 +222,7 @@ export function Payoff() {
           <Card>
             <CardHead>Payoff Order</CardHead>
             <CardBody style={{ padding: 0 }}>
+              <div className="tbl-wrap">
               <table className="tbl">
                 <thead>
                   <tr>
@@ -277,6 +278,7 @@ export function Payoff() {
                   })}
                 </tbody>
               </table>
+              </div>
             </CardBody>
           </Card>
 
@@ -299,7 +301,7 @@ export function Payoff() {
 
             {showTable && (
               <CardBody style={{ padding: 0 }}>
-                <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+                <div className="tbl-wrap" style={{ maxHeight: 400, overflowY: 'auto' }}>
                   <table className="tbl">
                     <thead style={{ position: 'sticky', top: 0 }}>
                       <tr>

@@ -289,7 +289,7 @@ export function Accounts() {
             </CardHead>
           )}
           <CardBody style={{ padding: 0 }}>
-            <div style={{ overflowX: 'auto' }}>
+            <div className="tbl-wrap">
               <table className="tbl">
                 <thead>
                   <tr>
