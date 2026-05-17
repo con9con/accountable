@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccountStore } from '@/store/useAccountStore';
-import { Card, CardHead, CardBody, Icon, Button, Ring, Sparkline, LineChart, Confirm } from '@/components/ui/ds';
+import { Card, CardHead, CardBody, Icon, Button, Ring, Sparkline, LineChart } from '@/components/ui/ds';
 import { ACCOUNT_TYPE_COLORS, ACCOUNT_TYPES } from '@/types';
 import {
   formatCurrency, formatCurrencyShort, formatDate, formatDateShort,
@@ -35,11 +35,8 @@ export function Overview() {
   const accounts = useAccountStore((s) => s.accounts);
   const payments = useAccountStore((s) => s.payments);
   const recordPayment = useAccountStore((s) => s.recordPayment);
-  const loadDemo = useAccountStore((s) => s.loadDemo);
-  const clearAll = useAccountStore((s) => s.clearAll);
   const navigate = useNavigate();
 
-  const [confirmClear, setConfirmClear] = useState(false);
   const [paidId, setPaidId] = useState<string | null>(null);
 
   const totalDebt = accounts.reduce((s, a) => s + a.totalDue, 0);
@@ -117,7 +114,6 @@ export function Overview() {
         </p>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
           <Button onClick={() => navigate('/accounts')}>Add Account</Button>
-          <Button variant="secondary" onClick={loadDemo}>Load Demo Data</Button>
         </div>
       </div>
     );
@@ -141,9 +137,6 @@ export function Overview() {
           )}
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <Button variant="secondary" size="sm" onClick={() => setConfirmClear(true)}>
-            Clear Data
-          </Button>
           <Button size="sm" onClick={() => navigate('/accounts')}>
             <Icon name="plus" size={14} /> Add Account
           </Button>
@@ -418,15 +411,6 @@ export function Overview() {
         </div>
       )}
 
-      <Confirm
-        open={confirmClear}
-        title="Clear All Data"
-        message="This will permanently delete all accounts and payment history. This cannot be undone."
-        confirmLabel="Clear Everything"
-        danger
-        onConfirm={() => { clearAll(); setConfirmClear(false); }}
-        onCancel={() => setConfirmClear(false)}
-      />
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import { NavLink } from 'react-router-dom';
 import { Icon } from '@/components/ui/ds';
-import { useAccountStore } from '@/store/useAccountStore';
 
 const NAV = [
   { to: '/', icon: 'home' as const, label: 'Overview', end: true },
@@ -9,10 +8,6 @@ const NAV = [
 ];
 
 export function Sidebar() {
-  const loadDemo = useAccountStore((s) => s.loadDemo);
-  const clearAll = useAccountStore((s) => s.clearAll);
-  const accounts = useAccountStore((s) => s.accounts);
-
   return (
     <aside className="sidebar">
       <div className="sidebar-top">
@@ -31,19 +26,6 @@ export function Sidebar() {
             </NavLink>
           ))}
         </nav>
-
-      </div>
-
-      <div className="sidebar-foot">
-        {accounts.length === 0 ? (
-          <button className="btn btn-secondary btn-sm" style={{ width: '100%' }} onClick={loadDemo}>
-            Load Demo Data
-          </button>
-        ) : (
-          <button className="btn btn-ghost btn-sm" style={{ width: '100%', color: 'var(--danger)' }} onClick={clearAll}>
-            Clear All Data
-          </button>
-        )}
       </div>
     </aside>
   );
