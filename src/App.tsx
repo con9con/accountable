@@ -1,21 +1,35 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Layout } from '@/components/layout/Layout';
-import { Home } from '@/pages/Home';
-import { CreditCards } from '@/pages/CreditCards';
-import { Loans } from '@/pages/Loans';
-import { Dashboard } from '@/pages/Dashboard';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { Overview } from '@/pages/Overview';
+import { Accounts } from '@/pages/Accounts';
+import { Payoff } from '@/pages/Payoff';
+import { ToastHost } from '@/components/ui/ds';
+import { useAccountStore } from '@/store/useAccountStore';
+
+function AppShell() {
+  const toasts = useAccountStore((s) => s.toasts);
+  const dismissToast = useAccountStore((s) => s.dismissToast);
+
+  return (
+    <div className="app">
+      <Sidebar />
+      <main className="main">
+        <Routes>
+          <Route path="/" element={<Overview />} />
+          <Route path="/accounts" element={<Accounts />} />
+          <Route path="/payoff" element={<Payoff />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+      <ToastHost toasts={toasts} dismiss={dismissToast} />
+    </div>
+  );
+}
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/credit-cards" element={<CreditCards />} />
-          <Route path="/loans" element={<Loans />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-        </Route>
-      </Routes>
+      <AppShell />
     </BrowserRouter>
   );
 }

@@ -1,177 +1,240 @@
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { accountSchema, type AccountFormValues } from '@/lib/validators';
+import { useState } from 'react';
 import { useAccountStore } from '@/store/useAccountStore';
+import { Icon, Button, Field } from '@/components/ui/ds';
+import { ACCOUNT_TYPES } from '@/types';
 import type { Account } from '@/types';
-import { ACCOUNT_TYPE_LABELS } from '@/types';
-import { toast } from 'sonner';
+import { todayISO } from '@/lib/utils';
 
-interface AccountFormProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+interface Props {
   account?: Account;
-  defaultType?: Account['type'];
+  onClose: () => void;
 }
 
-export function AccountForm({ open, onOpenChange, account, defaultType }: AccountFormProps) {
+export function AccountForm({ account, onClose }: Props) {
   const addAccount = useAccountStore((s) => s.addAccount);
   const updateAccount = useAccountStore((s) => s.updateAccount);
+
   const isEdit = !!account;
+  const [step, setStep] = useState<1 | 2>(isEdit ? 2 : 1);
+  const [type, setType] = useState<Account['type']>(account?.type ?? 'credit_card');
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    reset,
-    formState: { errors },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } = useForm<AccountFormValues>({
-    resolver: zodResolver(accountSchema) as any,
-    defaultValues: {
-      type: defaultType ?? 'credit_card',
-      name: '',
-      totalDue: 0,
-      minimumDue: 0,
-      interestRate: 0,
-      dueDate: '',
-      originalBalance: undefined,
-      notes: '',
-    },
-  });
+  const [name, setName] = useState(account?.name ?? '');
+  const [issuer, setIssuer] = useState(account?.issuer ?? '');
+  const [balance, setBalance] = useState(account?.totalDue?.toString() ?? '');
+  const [originalBalance, setOriginalBalance] = useState(account?.originalBalance?.toString() ?? '');
+  const [minPayment, setMinPayment] = useState(account?.minimumDue?.toString() ?? '');
+  const [apr, setApr] = useState(account?.interestRate?.toString() ?? '');
+  const [dueDate, setDueDate] = useState(account?.dueDate ?? '');
+  const [notes, setNotes] = useState(account?.notes ?? '');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (account) {
-      reset({
-        type: account.type,
-        name: account.name,
-        totalDue: account.totalDue,
-        minimumDue: account.minimumDue,
-        interestRate: account.interestRate,
-        dueDate: account.dueDate ?? '',
-        originalBalance: account.originalBalance ?? account.totalDue,
-        notes: account.notes ?? '',
-      });
+  function validate() {
+    const errs: Record<string, string> = {};
+    if (!name.trim()) errs.name = 'Name is required';
+    const bal = parseFloat(balance);
+    if (isNaN(bal) || bal < 0) errs.balance = 'Enter a valid balance';
+    const min = parseFloat(minPayment);
+    if (isNaN(min) || min < 0) errs.minPayment = 'Enter a valid minimum payment';
+    const rate = parseFloat(apr);
+    if (isNaN(rate) || rate < 0 || rate > 100) errs.apr = 'Enter a rate between 0 and 100';
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
+
+  function handleSubmit() {
+    if (!validate()) return;
+    const data = {
+      type,
+      name: name.trim(),
+      issuer: issuer.trim() || undefined,
+      totalDue: parseFloat(balance),
+      minimumDue: parseFloat(minPayment),
+      interestRate: parseFloat(apr),
+      dueDate: dueDate || undefined,
+      originalBalance: originalBalance ? parseFloat(originalBalance) : undefined,
+      notes: notes.trim() || undefined,
+    };
+    if (isEdit && account) {
+      updateAccount(account.id, data);
     } else {
-      reset({
-        type: defaultType ?? 'credit_card',
-        name: '',
-        totalDue: 0,
-        minimumDue: 0,
-        interestRate: 0,
-        dueDate: '',
-        originalBalance: undefined,
-        notes: '',
-      });
+      addAccount(data);
     }
-  }, [account, defaultType, open, reset]);
+    onClose();
+  }
 
-  const onSubmit = (values: AccountFormValues) => {
-    if (isEdit) {
-      updateAccount(account.id, values);
-      toast.success(`${values.name} updated`);
-    } else {
-      addAccount(values);
-      toast.success(`${values.name} added`);
-    }
-    onOpenChange(false);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit Account' : 'Add Account'}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={(e) => e.preventDefault()} className="space-y-4 pt-2">
-          <div className="space-y-1.5">
-            <Label>Account Type</Label>
-            <Select
-              value={watch('type')}
-              onValueChange={(v) => setValue('type', v as AccountFormValues['type'])}
+  // Step 1: pick account type
+  if (step === 1) {
+    return (
+      <div>
+        <p style={{ color: 'var(--ink-3)', fontSize: 13, marginBottom: 18 }}>
+          What type of account would you like to add?
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {ACCOUNT_TYPES.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => { setType(t.key); setStep(2); }}
+              style={{
+                border: '1.5px solid var(--border)',
+                borderRadius: 'var(--r-md)',
+                background: 'var(--surface)',
+                padding: '16px 14px',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'border-color 0.12s, background 0.12s',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}
             >
-              <SelectTrigger>
-                <SelectValue>{ACCOUNT_TYPE_LABELS[watch('type')]}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="credit_card">Credit Card</SelectItem>
-                <SelectItem value="car_loan">Car Loan</SelectItem>
-                <SelectItem value="personal_loan">Personal Loan</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+              <span style={{ color: t.color }}>
+                <Icon name={t.icon as Parameters<typeof Icon>[0]['name']} size={20} />
+              </span>
+              <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink)' }}>{t.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-          <div className="space-y-1.5">
-            <Label>Account Name</Label>
-            <Input {...register('name')} placeholder="e.g. Chase Sapphire" />
-            {errors.name && <p className="text-destructive text-xs">{errors.name.message}</p>}
-          </div>
+  // Step 2: fill details
+  const typeMeta = ACCOUNT_TYPES.find((t) => t.key === type)!;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {!isEdit && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <button
+            onClick={() => setStep(1)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-3)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5 }}
+          >
+            <Icon name="chevronDown" size={12} style={{ transform: 'rotate(90deg)' }} />
+            Back
+          </button>
+          <span
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              fontSize: 12, fontWeight: 600, color: typeMeta.color,
+              background: `${typeMeta.color}22`,
+              padding: '3px 10px', borderRadius: 999,
+            }}
+          >
+            <Icon name={typeMeta.icon as Parameters<typeof Icon>[0]['name']} size={12} />
+            {typeMeta.label}
+          </span>
+        </div>
+      )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Current Balance ($)</Label>
-              <Input type="number" step="0.01" {...register('totalDue')} />
-              {errors.totalDue && <p className="text-destructive text-xs">{errors.totalDue.message}</p>}
-            </div>
-            <div className="space-y-1.5">
-              <Label>
-                Original Balance ($)
-                <span className="text-muted-foreground text-xs ml-1">(optional)</span>
-              </Label>
-              <Input
-                type="number"
-                step="0.01"
-                placeholder="Defaults to current balance"
-                {...register('originalBalance')}
-              />
-            </div>
-          </div>
+      <Field label="Account Name" error={errors.name}>
+        <input
+          className="ds-input"
+          placeholder={`e.g. ${type === 'credit_card' ? 'Chase Sapphire' : type === 'car_loan' ? '2022 Honda Accord' : 'SoFi Loan'}`}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          autoFocus
+        />
+      </Field>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Minimum Due ($)</Label>
-              <Input type="number" step="0.01" {...register('minimumDue')} />
-              {errors.minimumDue && <p className="text-destructive text-xs">{errors.minimumDue.message}</p>}
-            </div>
-            <div className="space-y-1.5">
-              <Label>Interest Rate (APR %)</Label>
-              <Input type="number" step="0.01" {...register('interestRate')} />
-              {errors.interestRate && <p className="text-destructive text-xs">{errors.interestRate.message}</p>}
-            </div>
-          </div>
+      <Field label="Issuer / Lender">
+        <input
+          className="ds-input"
+          placeholder={`e.g. ${type === 'credit_card' ? 'Chase' : type === 'car_loan' ? 'Honda Financial' : 'SoFi'}`}
+          value={issuer}
+          onChange={(e) => setIssuer(e.target.value)}
+        />
+      </Field>
 
-          <div className="space-y-1.5">
-            <Label>Due Date <span className="text-muted-foreground text-xs">(optional)</span></Label>
-            <Input type="date" {...register('dueDate')} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <Field label="Current Balance" error={errors.balance}>
+          <div className="input-prefix">
+            <span>$</span>
+            <input
+              className="ds-input"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={balance}
+              onChange={(e) => setBalance(e.target.value)}
+            />
           </div>
+        </Field>
+        <Field label="Original Balance">
+          <div className="input-prefix">
+            <span>$</span>
+            <input
+              className="ds-input"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder={balance || '0.00'}
+              value={originalBalance}
+              onChange={(e) => setOriginalBalance(e.target.value)}
+            />
+          </div>
+        </Field>
+      </div>
 
-          <div className="space-y-1.5">
-            <Label>Notes <span className="text-muted-foreground text-xs">(optional)</span></Label>
-            <Input placeholder="e.g. Home improvement loan" {...register('notes')} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <Field label="Minimum Payment" error={errors.minPayment}>
+          <div className="input-prefix">
+            <span>$</span>
+            <input
+              className="ds-input"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={minPayment}
+              onChange={(e) => setMinPayment(e.target.value)}
+            />
           </div>
+        </Field>
+        <Field label="Interest Rate (APR)" error={errors.apr}>
+          <div style={{ position: 'relative' }}>
+            <input
+              className="ds-input"
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              placeholder="0.00"
+              value={apr}
+              onChange={(e) => setApr(e.target.value)}
+              style={{ paddingRight: 28 }}
+            />
+            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-3)', fontSize: 13 }}>%</span>
+          </div>
+        </Field>
+      </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="button" onClick={handleSubmit(onSubmit as any)}>
-              {isEdit ? 'Save Changes' : 'Add Account'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <Field label="Due Date" hint="Optional — we'll alert you when this is approaching">
+        <input
+          className="ds-input"
+          type="date"
+          min={todayISO()}
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+        />
+      </Field>
+
+      <Field label="Notes">
+        <textarea
+          className="ds-textarea"
+          placeholder="Any notes about this account..."
+          rows={2}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          style={{ resize: 'vertical' }}
+        />
+      </Field>
+
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
+        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+        <Button onClick={handleSubmit}>
+          {isEdit ? 'Save Changes' : 'Add Account'}
+        </Button>
+      </div>
+    </div>
   );
 }

@@ -19,7 +19,8 @@
       "Bash(mkdir -p /Users/con/Dev/accountable/src/components/ui && cp /Users/con/Dev/accountable/@/components/ui/*.tsx /Users/con/Dev/accountable/src/components/ui/ && rm -rf \"/Users/con/Dev/accountable/@\")",
       "Bash(ipconfig getifaddr *)",
       "Bash(pkill -f \"vite --port 5173\")",
-      "Bash(npx shadcn@latest add skeleton)"
+      "Bash(npx shadcn@latest add skeleton)",
+      "Bash(vercel --yes)"
     ],
     "additionalDirectories": [
       "/Users/con/Dev/accountable/@/components/ui"
