@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useAccountStore } from '@/store/useAccountStore';
+import { useActions } from '@/hooks/useActions';
 import { Card, CardHead, CardBody, Icon, Button, Modal, Confirm, Sparkline } from '@/components/ui/ds';
 import { ACCOUNT_TYPES, ACCOUNT_TYPE_COLORS } from '@/types';
 import type { Account } from '@/types';
@@ -174,7 +175,7 @@ function AccountRow({ account: a, payments, onEdit, onDelete, onPay }: AccountRo
 export function Accounts() {
   const accounts = useAccountStore((s) => s.accounts);
   const payments = useAccountStore((s) => s.payments);
-  const deleteAccount = useAccountStore((s) => s.deleteAccount);
+  const actions = useActions();
 
   const [filter, setFilter] = useState<FilterKey>('all');
   const [sort, setSort] = useState<SortKey>('balance');
@@ -351,7 +352,7 @@ export function Accounts() {
         message="This will permanently delete this account and all its payment history."
         confirmLabel="Delete"
         danger
-        onConfirm={() => { if (deleteId) deleteAccount(deleteId); setDeleteId(null); }}
+        onConfirm={() => { if (deleteId) actions.deleteAccount(deleteId); setDeleteId(null); }}
         onCancel={() => setDeleteId(null)}
       />
     </div>

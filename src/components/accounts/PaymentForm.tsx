@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAccountStore } from '@/store/useAccountStore';
+import { useActions } from '@/hooks/useActions';
 import { Button, Field } from '@/components/ui/ds';
 import { formatCurrency, todayISO } from '@/lib/utils';
 
@@ -10,7 +11,7 @@ interface Props {
 
 export function PaymentForm({ defaultAccountId, onClose }: Props) {
   const accounts = useAccountStore((s) => s.accounts);
-  const recordPayment = useAccountStore((s) => s.recordPayment);
+  const actions = useActions();
 
   const [accountId, setAccountId] = useState(defaultAccountId ?? (accounts[0]?.id ?? ''));
   const [amount, setAmount] = useState('');
@@ -46,7 +47,7 @@ export function PaymentForm({ defaultAccountId, onClose }: Props) {
 
   function handleSubmit() {
     if (!validate()) return;
-    recordPayment(accountId, parseFloat(amount), date, note.trim());
+    actions.recordPayment(accountId, parseFloat(amount), date, note.trim());
     onClose();
   }
 

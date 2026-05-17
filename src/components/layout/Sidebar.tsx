@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { UserButton } from '@clerk/react';
 import { Icon } from '@/components/ui/ds';
 
 const NAV = [
@@ -26,6 +27,10 @@ export function Sidebar() {
             </NavLink>
           ))}
         </nav>
+      </div>
+
+      <div className="sidebar-bottom">
+        <UserButton />
       </div>
     </aside>
   );

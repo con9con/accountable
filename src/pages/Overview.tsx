@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccountStore } from '@/store/useAccountStore';
+import { useActions } from '@/hooks/useActions';
 import { Card, CardHead, CardBody, Icon, Button, Ring, Sparkline, LineChart } from '@/components/ui/ds';
 import { ACCOUNT_TYPE_COLORS, ACCOUNT_TYPES } from '@/types';
 import {
@@ -34,7 +35,7 @@ function DueBadge({ dueDate }: { dueDate?: string }) {
 export function Overview() {
   const accounts = useAccountStore((s) => s.accounts);
   const payments = useAccountStore((s) => s.payments);
-  const recordPayment = useAccountStore((s) => s.recordPayment);
+  const actions = useActions();
   const navigate = useNavigate();
 
   const [paidId, setPaidId] = useState<string | null>(null);
@@ -99,7 +100,7 @@ export function Overview() {
     const account = accounts.find((a) => a.id === paidId);
     if (account) {
       const today = new Date().toISOString().split('T')[0];
-      recordPayment(paidId, account.minimumDue, today, 'Minimum payment');
+      actions.recordPayment(paidId, account.minimumDue, today, 'Minimum payment');
     }
     setPaidId(null);
   }

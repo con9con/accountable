@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAccountStore } from '@/store/useAccountStore';
+import { useActions } from '@/hooks/useActions';
 import { Icon, Button, Field } from '@/components/ui/ds';
 import { ACCOUNT_TYPES } from '@/types';
 import type { Account } from '@/types';
@@ -11,8 +11,7 @@ interface Props {
 }
 
 export function AccountForm({ account, onClose }: Props) {
-  const addAccount = useAccountStore((s) => s.addAccount);
-  const updateAccount = useAccountStore((s) => s.updateAccount);
+  const actions = useActions();
 
   const isEdit = !!account;
   const [step, setStep] = useState<1 | 2>(isEdit ? 2 : 1);
@@ -55,9 +54,9 @@ export function AccountForm({ account, onClose }: Props) {
       notes: notes.trim() || undefined,
     };
     if (isEdit && account) {
-      updateAccount(account.id, data);
+      actions.updateAccount(account.id, data);
     } else {
-      addAccount(data);
+      actions.addAccount(data);
     }
     onClose();
   }

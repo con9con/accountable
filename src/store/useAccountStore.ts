@@ -1,145 +1,164 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { Account, AccountType, Payment, Toast } from '@/types';
-import { generateId, todayISO, formatCurrency } from '@/lib/utils';
-import { buildDemoState } from '@/lib/demoData';
-
-function advanceDueDate(dueDate: string): string {
-  const d = new Date(dueDate + 'T00:00');
-  d.setMonth(d.getMonth() + 1);
-  return d.toISOString().split('T')[0];
-}
+import { generateId, formatCurrency } from '@/lib/utils';
+import * as api from '@/lib/apiClient';
 
 interface AccountStore {
   accounts: Account[];
   payments: Payment[];
   toasts: Toast[];
+  loading: boolean;
+  initialized: boolean;
 
-  addAccount: (data: Omit<Account, 'id' | 'createdAt' | 'updatedAt' | 'balanceHistory'>) => void;
-  updateAccount: (id: string, data: Partial<Omit<Account, 'id' | 'createdAt'>>) => void;
-  deleteAccount: (id: string) => void;
-  addPayment: (data: Omit<Payment, 'id'>) => void;
-  recordPayment: (accountId: string, amount: number, date: string, note?: string) => void;
-  updatePayment: (id: string, data: Partial<Omit<Payment, 'id' | 'accountId'>>) => void;
-  deletePayment: (id: string) => void;
+  // Data lifecycle
+  init: (token: string) => Promise<void>;
+  reset: () => void;
+
+  // Account actions
+  addAccount: (token: string, data: Omit<Account, 'id' | 'createdAt' | 'updatedAt' | 'balanceHistory'>) => Promise<void>;
+  updateAccount: (token: string, id: string, data: Partial<Omit<Account, 'id' | 'createdAt'>>) => Promise<void>;
+  deleteAccount: (token: string, id: string) => Promise<void>;
+
+  // Payment actions
+  recordPayment: (token: string, accountId: string, amount: number, date: string, note?: string) => Promise<void>;
+  deletePayment: (token: string, id: string) => Promise<void>;
+
+  // Toast
+  toast: (msg: string, type?: Toast['type']) => void;
   dismissToast: (id: string) => void;
 
+  // Computed helpers (synchronous, derived from state)
   getAccountsByType: (type: AccountType) => Account[];
   getTotalDebt: () => number;
   getTotalMinimum: () => number;
   getTotalOriginal: () => number;
   getAvgAPR: () => number;
-
-  loadDemo: () => void;
-  clearAll: () => void;
 }
 
-export const useAccountStore = create<AccountStore>()(
-  persist(
-    (set, get) => ({
-      accounts: [],
-      payments: [],
-      toasts: [],
+export const useAccountStore = create<AccountStore>()((set, get) => ({
+  accounts: [],
+  payments: [],
+  toasts: [],
+  loading: false,
+  initialized: false,
 
-      addAccount: (data) => {
-        const now = new Date().toISOString();
-        const today = todayISO();
-        set((s) => ({
-          accounts: [
-            ...s.accounts,
-            {
-              ...data,
-              id: generateId(),
-              originalBalance: data.originalBalance ?? data.totalDue,
-              balanceHistory: [{ date: today, balance: data.totalDue }],
-              createdAt: now,
-              updatedAt: now,
-            },
-          ],
-        }));
-      },
+  init: async (token) => {
+    if (get().initialized) return;
+    set({ loading: true });
+    try {
+      const [accounts, payments] = await Promise.all([
+        api.fetchAccounts(token),
+        api.fetchPayments(token),
+      ]);
+      set({ accounts, payments, initialized: true });
+    } catch (err) {
+      console.error('[init] failed to load data:', err);
+      set({ initialized: true }); // unblock the UI even on error
+      get().toast('Failed to load data. Please refresh.', 'error');
+    } finally {
+      set({ loading: false });
+    }
+  },
 
-      updateAccount: (id, data) => {
-        set((s) => ({
-          accounts: s.accounts.map((a) =>
-            a.id === id ? { ...a, ...data, updatedAt: new Date().toISOString() } : a
-          ),
-        }));
-      },
+  reset: () => set({ accounts: [], payments: [], initialized: false }),
 
-      deleteAccount: (id) => {
-        set((s) => ({
-          accounts: s.accounts.filter((a) => a.id !== id),
-          payments: s.payments.filter((p) => p.accountId !== id),
-        }));
-      },
+  addAccount: async (token, data) => {
+    try {
+      const id = generateId();
+      const account = await api.createAccount(token, { id, ...data });
+      set((s) => ({ accounts: [...s.accounts, account] }));
+    } catch (err) {
+      console.error('[addAccount]', err);
+      get().toast(err instanceof Error ? err.message : 'Failed to add account', 'error');
+    }
+  },
 
-      addPayment: (data) => {
-        const payment: Payment = { ...data, id: generateId() };
-        set((s) => {
-          const account = s.accounts.find((a) => a.id === data.accountId);
-          const updatedAccounts = account
-            ? s.accounts.map((a) => {
-                if (a.id !== data.accountId) return a;
-                const newBalance = Math.max(0, a.totalDue - data.amount);
-                return {
-                  ...a,
-                  totalDue: newBalance,
-                  balanceHistory: [...(a.balanceHistory ?? []), { date: data.date, balance: newBalance }],
-                  ...(a.dueDate ? { dueDate: advanceDueDate(a.dueDate) } : {}),
-                  updatedAt: new Date().toISOString(),
-                };
-              })
-            : s.accounts;
-          return { payments: [...s.payments, payment], accounts: updatedAccounts };
-        });
-      },
+  updateAccount: async (token, id, data) => {
+    try {
+      const updated = await api.updateAccount(token, id, data);
+      set((s) => ({ accounts: s.accounts.map((a) => (a.id === id ? updated : a)) }));
+    } catch (err) {
+      console.error('[updateAccount]', err);
+      get().toast(err instanceof Error ? err.message : 'Failed to update account', 'error');
+    }
+  },
 
-      recordPayment: (accountId, amount, date, note = '') => {
-        const account = get().accounts.find((a) => a.id === accountId);
-        get().addPayment({ accountId, amount, date, note });
-        if (account) {
-          const msg = `Payment of ${formatCurrency(amount)} recorded for ${account.name}`;
-          const id = generateId();
-          set((s) => ({ toasts: [...s.toasts, { id, msg, type: 'success' }] }));
-          setTimeout(() => get().dismissToast(id), 3500);
-        }
-      },
+  deleteAccount: async (token, id) => {
+    try {
+      await api.deleteAccount(token, id);
+      set((s) => ({
+        accounts: s.accounts.filter((a) => a.id !== id),
+        payments: s.payments.filter((p) => p.accountId !== id),
+      }));
+    } catch (err) {
+      console.error('[deleteAccount]', err);
+      get().toast(err instanceof Error ? err.message : 'Failed to delete account', 'error');
+    }
+  },
 
-      updatePayment: (id, data) => {
-        set((s) => {
-          const oldPayment = s.payments.find((p) => p.id === id);
-          if (!oldPayment) return s;
-          const amountDelta = (data.amount ?? oldPayment.amount) - oldPayment.amount;
-          const updatedPayments = s.payments.map((p) => (p.id === id ? { ...p, ...data } : p));
-          const updatedAccounts = s.accounts.map((a) => {
-            if (a.id !== oldPayment.accountId) return a;
-            return { ...a, totalDue: Math.max(0, a.totalDue - amountDelta), updatedAt: new Date().toISOString() };
-          });
-          return { payments: updatedPayments, accounts: updatedAccounts };
-        });
-      },
+  recordPayment: async (token, accountId, amount, date, note = '') => {
+    const account = get().accounts.find((a) => a.id === accountId);
+    try {
+      const payment = await api.createPayment(token, {
+        id: generateId(),
+        accountId,
+        amount,
+        date,
+        note,
+      });
+      set((s) => ({
+        payments: [...s.payments, payment],
+        accounts: s.accounts.map((a) => {
+          if (a.id !== accountId) return a;
+          const newBalance = Math.max(0, a.totalDue - amount);
+          let newDueDate = a.dueDate;
+          if (a.dueDate) {
+            const d = new Date(a.dueDate + 'T00:00:00');
+            d.setMonth(d.getMonth() + 1);
+            newDueDate = d.toISOString().split('T')[0];
+          }
+          return {
+            ...a,
+            totalDue: newBalance,
+            dueDate: newDueDate,
+            balanceHistory: [...(a.balanceHistory ?? []), { date, balance: newBalance }],
+            updatedAt: new Date().toISOString(),
+          };
+        }),
+      }));
+      if (account) {
+        get().toast(`Payment of ${formatCurrency(amount)} recorded for ${account.name}`);
+      }
+    } catch (err) {
+      console.error('[recordPayment]', err);
+      get().toast(err instanceof Error ? err.message : 'Failed to record payment', 'error');
+    }
+  },
 
-      deletePayment: (id) => {
-        set((s) => ({ payments: s.payments.filter((p) => p.id !== id) }));
-      },
+  deletePayment: async (token, id) => {
+    try {
+      await api.deletePayment(token, id);
+      set((s) => ({ payments: s.payments.filter((p) => p.id !== id) }));
+    } catch (err) {
+      console.error('[deletePayment]', err);
+      get().toast(err instanceof Error ? err.message : 'Failed to delete payment', 'error');
+    }
+  },
 
-      dismissToast: (id) => {
-        set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
-      },
+  toast: (msg, type = 'success') => {
+    const id = generateId();
+    set((s) => ({ toasts: [...s.toasts, { id, msg, type }] }));
+    setTimeout(() => get().dismissToast(id), 3500);
+  },
 
-      getAccountsByType: (type) => get().accounts.filter((a) => a.type === type),
-      getTotalDebt: () => get().accounts.reduce((sum, a) => sum + a.totalDue, 0),
-      getTotalMinimum: () => get().accounts.reduce((sum, a) => sum + a.minimumDue, 0),
-      getTotalOriginal: () => get().accounts.reduce((sum, a) => sum + (a.originalBalance ?? a.totalDue), 0),
-      getAvgAPR: () => {
-        const accs = get().accounts;
-        return accs.length ? accs.reduce((s, a) => s + a.interestRate, 0) / accs.length : 0;
-      },
+  dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 
-      loadDemo: () => set(buildDemoState()),
-      clearAll: () => set({ accounts: [], payments: [] }),
-    }),
-    { name: 'accountable-store' }
-  )
-);
+  getAccountsByType: (type) => get().accounts.filter((a) => a.type === type),
+  getTotalDebt: () => get().accounts.reduce((s, a) => s + a.totalDue, 0),
+  getTotalMinimum: () => get().accounts.reduce((s, a) => s + a.minimumDue, 0),
+  getTotalOriginal: () => get().accounts.reduce((s, a) => s + (a.originalBalance ?? a.totalDue), 0),
+  getAvgAPR: () => {
+    const accs = get().accounts;
+    return accs.length ? accs.reduce((s, a) => s + a.interestRate, 0) / accs.length : 0;
+  },
+}));
