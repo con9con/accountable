@@ -21,6 +21,7 @@ interface AccountStore {
 
   // Payment actions
   recordPayment: (token: string, accountId: string, amount: number, date: string, note?: string) => Promise<void>;
+  updatePayment: (token: string, id: string, updates: { amount?: number; date?: string; note?: string }) => Promise<void>;
   deletePayment: (token: string, id: string) => Promise<void>;
 
   // Toast
@@ -132,6 +133,27 @@ export const useAccountStore = create<AccountStore>()((set, get) => ({
     } catch (err) {
       console.error('[recordPayment]', err);
       get().toast(err instanceof Error ? err.message : 'Failed to record payment', 'error');
+    }
+  },
+
+  updatePayment: async (token, id, updates) => {
+    try {
+      const updated = await api.updatePayment(token, id, updates);
+      // If amount changed, adjust account balance in local state too
+      const old = get().payments.find((p) => p.id === id);
+      set((s) => ({
+        payments: s.payments.map((p) => (p.id === id ? updated : p)),
+        accounts: updates.amount !== undefined && old
+          ? s.accounts.map((a) => {
+              if (a.id !== updated.accountId) return a;
+              const delta = old.amount - updates.amount!;
+              return { ...a, totalDue: Math.max(0, a.totalDue + delta) };
+            })
+          : s.accounts,
+      }));
+    } catch (err) {
+      console.error('[updatePayment]', err);
+      get().toast(err instanceof Error ? err.message : 'Failed to update payment', 'error');
     }
   },
 

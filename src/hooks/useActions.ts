@@ -27,6 +27,9 @@ export function useActions() {
     recordPayment: async (accountId: string, amount: number, date: string, note?: string) =>
       store.recordPayment(await tok(), accountId, amount, date, note),
 
+    updatePayment: async (id: string, updates: { amount?: number; date?: string; note?: string }) =>
+      store.updatePayment(await tok(), id, updates),
+
     deletePayment: async (id: string) =>
       store.deletePayment(await tok(), id),
   };

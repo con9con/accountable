@@ -163,7 +163,7 @@ export function Icon({ name, size = 18, className = '', style }: IconProps) {
 
 interface ButtonProps {
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
   size?: 'sm' | 'md';
   onClick?: (e: React.MouseEvent) => void;
   type?: 'button' | 'submit' | 'reset';

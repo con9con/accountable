@@ -1,18 +1,12 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, NavLink } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { SignIn, SignUp, useAuth } from '@clerk/react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Overview } from '@/pages/Overview';
 import { Accounts } from '@/pages/Accounts';
 import { Payoff } from '@/pages/Payoff';
-import { ToastHost, Icon } from '@/components/ui/ds';
+import { ToastHost } from '@/components/ui/ds';
 import { useAccountStore } from '@/store/useAccountStore';
-
-const NAV = [
-  { to: '/', icon: 'home' as const, label: 'Overview', end: true },
-  { to: '/accounts', icon: 'card' as const, label: 'Accounts', end: false },
-  { to: '/payoff', icon: 'calc' as const, label: 'Payoff', end: false },
-];
 
 function AppShell() {
   const { getToken } = useAuth();
@@ -50,20 +44,6 @@ function AppShell() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-
-      <nav className="tab-bar">
-        {NAV.map(({ to, icon, label, end }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) => `tab-item${isActive ? ' active' : ''}`}
-          >
-            <Icon name={icon} size={20} />
-            <span>{label}</span>
-          </NavLink>
-        ))}
-      </nav>
 
       <ToastHost toasts={toasts} dismiss={dismissToast} />
     </div>

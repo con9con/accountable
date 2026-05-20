@@ -5,6 +5,7 @@ interface RawAccount {
   id: string; userId: string; type: string; name: string; issuer: string | null;
   totalDue: string; minimumDue: string; interestRate: string;
   dueDate: string | null; originalBalance: string | null; notes: string | null;
+  status: string;
   createdAt: string; updatedAt: string;
   balanceHistory: { id: string; accountId: string; date: string; balance: string }[];
 }
@@ -26,6 +27,7 @@ function parseAccount(r: RawAccount): Account {
     dueDate: r.dueDate ?? undefined,
     originalBalance: r.originalBalance ? Number(r.originalBalance) : undefined,
     notes: r.notes ?? undefined,
+    status: (r.status as Account['status']) ?? 'active',
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
     balanceHistory: r.balanceHistory
@@ -95,6 +97,14 @@ export async function createPayment(token: string, payment: Omit<Payment, 'creat
   const data = await apiFetch('/api/payments', token, {
     method: 'POST',
     body: JSON.stringify(payment),
+  });
+  return parsePayment(data as RawPayment);
+}
+
+export async function updatePayment(token: string, id: string, updates: { amount?: number; date?: string; note?: string }): Promise<Payment> {
+  const data = await apiFetch(`/api/payments/${id}`, token, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
   });
   return parsePayment(data as RawPayment);
 }

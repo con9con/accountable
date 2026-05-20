@@ -6,15 +6,16 @@ import { formatCurrency, todayISO } from '@/lib/utils';
 
 interface Props {
   defaultAccountId?: string;
+  defaultAmount?: number;
   onClose: () => void;
 }
 
-export function PaymentForm({ defaultAccountId, onClose }: Props) {
+export function PaymentForm({ defaultAccountId, defaultAmount, onClose }: Props) {
   const accounts = useAccountStore((s) => s.accounts);
   const actions = useActions();
 
   const [accountId, setAccountId] = useState(defaultAccountId ?? (accounts[0]?.id ?? ''));
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState(defaultAmount != null ? defaultAmount.toFixed(2) : '');
   const [date, setDate] = useState(todayISO());
   const [note, setNote] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});

@@ -14,6 +14,7 @@ export const demoAccounts: Omit<Account, 'createdAt' | 'updatedAt'>[] = [
     dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     originalBalance: 5500,
     notes: 'Primary travel card',
+    status: 'active',
     balanceHistory: [
       { date: '2025-11-01', balance: 5500 },
       { date: '2025-12-01', balance: 5320 },
@@ -34,6 +35,7 @@ export const demoAccounts: Omit<Account, 'createdAt' | 'updatedAt'>[] = [
     interestRate: 19.99,
     dueDate: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     originalBalance: 2500,
+    status: 'active',
     balanceHistory: [
       { date: '2025-12-01', balance: 2500 },
       { date: '2026-01-15', balance: 2350 },
@@ -52,6 +54,7 @@ export const demoAccounts: Omit<Account, 'createdAt' | 'updatedAt'>[] = [
     minimumDue: 25,
     interestRate: 22.49,
     originalBalance: 1000,
+    status: 'active',
     balanceHistory: [
       { date: '2025-11-01', balance: 1000 },
       { date: '2025-12-01', balance: 900 },
@@ -73,6 +76,7 @@ export const demoAccounts: Omit<Account, 'createdAt' | 'updatedAt'>[] = [
     dueDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     originalBalance: 24000,
     notes: '60-month loan, started Jan 2022',
+    status: 'active',
     balanceHistory: [
       { date: '2025-11-01', balance: 20500 },
       { date: '2025-12-01', balance: 20090 },
@@ -94,6 +98,7 @@ export const demoAccounts: Omit<Account, 'createdAt' | 'updatedAt'>[] = [
     dueDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     originalBalance: 9000,
     notes: 'Home improvement project',
+    status: 'active',
     balanceHistory: [
       { date: '2025-11-01', balance: 9000 },
       { date: '2025-12-01', balance: 8785 },

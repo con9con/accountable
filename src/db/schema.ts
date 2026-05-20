@@ -19,6 +19,7 @@ export const accounts = pgTable('accounts', {
   dueDate: text('due_date'),
   originalBalance: numeric('original_balance', { precision: 12, scale: 2 }),
   notes: text('notes'),
+  status: text('status').default('active').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });

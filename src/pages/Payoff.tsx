@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useAccountStore } from '@/store/useAccountStore';
 import { Card, CardHead, CardBody, Icon, LineChart } from '@/components/ui/ds';
+
 import { ACCOUNT_TYPE_COLORS } from '@/types';
 import { formatCurrency, formatCurrencyShort, fmtMonths, calculatePayoff } from '@/lib/utils';
 
@@ -64,13 +65,17 @@ export function Payoff() {
 
   if (accounts.length === 0) {
     return (
-      <div style={{ padding: '48px 24px', maxWidth: 480, margin: '0 auto', textAlign: 'center' }}>
-        <Icon name="calc" size={40} style={{ opacity: 0.2, marginBottom: 16 }} />
-        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>No accounts to plan</h2>
-        <p style={{ color: 'var(--ink-3)', fontSize: 14 }}>
-          Add accounts on the Accounts page to see your payoff plan.
-        </p>
-      </div>
+      <Card>
+        <CardBody>
+          <div style={{ padding: '32px 0', textAlign: 'center' }}>
+            <Icon name="calc" size={40} style={{ opacity: 0.3, marginBottom: 16, color: '#fff' }} />
+            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8, color: '#fff' }}>No accounts to plan</h2>
+            <p style={{ color: 'var(--ink-3)', fontSize: 14 }}>
+              Add accounts on the Accounts page to see your payoff plan.
+            </p>
+          </div>
+        </CardBody>
+      </Card>
     );
   }
 
@@ -143,13 +148,17 @@ export function Payoff() {
           {/* Outcome hero */}
           <div
             style={{
-              background: 'var(--accent)',
+              background: 'rgba(255,255,255,0.08)',
+              backdropFilter: 'blur(32px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(32px) saturate(180%)',
+              border: '1px solid rgba(255,255,255,0.15)',
               borderRadius: 'var(--r-lg)',
               padding: '24px 28px',
               color: '#fff',
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
               gap: 20,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.20)',
             }}
           >
             <div>
@@ -303,7 +312,7 @@ export function Payoff() {
               <CardBody style={{ padding: 0 }}>
                 <div className="tbl-wrap" style={{ maxHeight: 400, overflowY: 'auto' }}>
                   <table className="tbl">
-                    <thead style={{ position: 'sticky', top: 0 }}>
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
                       <tr>
                         <th>Month</th>
                         <th>Date</th>

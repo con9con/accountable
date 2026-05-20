@@ -52,6 +52,7 @@ export function AccountForm({ account, onClose }: Props) {
       dueDate: dueDate || undefined,
       originalBalance: originalBalance ? parseFloat(originalBalance) : undefined,
       notes: notes.trim() || undefined,
+      status: 'active' as const,
     };
     if (isEdit && account) {
       actions.updateAccount(account.id, data);
@@ -82,13 +83,11 @@ export function AccountForm({ account, onClose }: Props) {
                 textAlign: 'left',
                 transition: 'border-color 0.12s, background 0.12s',
                 display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
+                alignItems: 'center',
+                gap: 10,
               }}
             >
-              <span style={{ color: t.color }}>
-                <Icon name={t.icon as Parameters<typeof Icon>[0]['name']} size={20} />
-              </span>
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: t.color, flexShrink: 0, display: 'inline-block' }} />
               <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink)' }}>{t.label}</span>
             </button>
           ))}

@@ -16,6 +16,7 @@ export interface Account {
   dueDate?: string;
   originalBalance?: number;
   notes?: string;
+  status: 'active' | 'closed';
   balanceHistory?: BalanceEntry[];
   createdAt: string;
   updatedAt: string;
