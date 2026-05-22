@@ -1,13 +1,18 @@
 import { useState } from 'react';
-import { NavLink, Link } from 'react-router-dom';
-import { UserButton } from '@clerk/react';
+import { NavLink, Link, useLocation } from 'react-router-dom';
+import { UserButton, useAuth } from '@clerk/react';
 import { Icon } from '@/components/ui/ds';
 
-const NAV = [
-  { to: '/', icon: 'home' as const, label: 'Overview', end: true },
-  { to: '/accounts', icon: 'card' as const, label: 'Accounts', end: false },
-  { to: '/payoff', icon: 'calc' as const, label: 'Payoff Plan', end: false },
-];
+function useNav() {
+  const { pathname } = useLocation();
+  const demo = pathname.startsWith('/demo');
+  const base = demo ? '/demo' : '';
+  return [
+    { to: `${base}/`, icon: 'home' as const, label: 'Overview', end: true },
+    { to: `${base}/accounts`, icon: 'card' as const, label: 'Accounts', end: false },
+    { to: `${base}/payoff`, icon: 'calc' as const, label: 'Payoff Plan', end: false },
+  ];
+}
 
 const USER_BUTTON_APPEARANCE = {
   elements: {
@@ -17,6 +22,8 @@ const USER_BUTTON_APPEARANCE = {
 
 export function Sidebar() {
   const [open, setOpen] = useState(false);
+  const NAV = useNav();
+  const { isSignedIn } = useAuth();
 
   // Close drawer on navigation
   const close = () => setOpen(false);
@@ -42,9 +49,11 @@ export function Sidebar() {
           </nav>
         </div>
 
-        <div className="sidebar-bottom">
-          <UserButton appearance={USER_BUTTON_APPEARANCE} />
-        </div>
+        {isSignedIn && (
+          <div className="sidebar-bottom">
+            <UserButton appearance={USER_BUTTON_APPEARANCE} />
+          </div>
+        )}
 
         {/* Mobile: kebab menu on right of top bar */}
         <button className="hamburger" onClick={() => setOpen(true)} aria-label="Open menu">
@@ -85,9 +94,11 @@ export function Sidebar() {
           ))}
         </nav>
 
-        <div className="drawer-foot">
-          <UserButton appearance={USER_BUTTON_APPEARANCE} />
-        </div>
+        {isSignedIn && (
+          <div className="drawer-foot">
+            <UserButton appearance={USER_BUTTON_APPEARANCE} />
+          </div>
+        )}
       </div>
     </>
   );

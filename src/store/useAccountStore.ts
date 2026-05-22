@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Account, AccountType, Payment, Toast } from '@/types';
 import { generateId, formatCurrency } from '@/lib/utils';
 import * as api from '@/lib/apiClient';
+import { buildDemoState } from '@/lib/demoData';
 
 interface AccountStore {
   accounts: Account[];
@@ -9,9 +10,11 @@ interface AccountStore {
   toasts: Toast[];
   loading: boolean;
   initialized: boolean;
+  demoMode: boolean;
 
   // Data lifecycle
   init: (token: string) => Promise<void>;
+  initDemo: () => void;
   reset: () => void;
 
   // Account actions
@@ -42,6 +45,7 @@ export const useAccountStore = create<AccountStore>()((set, get) => ({
   toasts: [],
   loading: false,
   initialized: false,
+  demoMode: false,
 
   init: async (token) => {
     if (get().initialized) return;
@@ -61,9 +65,20 @@ export const useAccountStore = create<AccountStore>()((set, get) => ({
     }
   },
 
-  reset: () => set({ accounts: [], payments: [], initialized: false }),
+  reset: () => set({ accounts: [], payments: [], initialized: false, demoMode: false }),
+
+  initDemo: () => {
+    const { accounts, payments } = buildDemoState();
+    set({ accounts, payments, initialized: true, demoMode: true });
+  },
 
   addAccount: async (token, data) => {
+    if (get().demoMode) {
+      const now = new Date().toISOString();
+      const account: Account = { id: generateId(), ...data, createdAt: now, updatedAt: now };
+      set((s) => ({ accounts: [...s.accounts, account] }));
+      return;
+    }
     try {
       const id = generateId();
       const account = await api.createAccount(token, { id, ...data });
@@ -75,6 +90,11 @@ export const useAccountStore = create<AccountStore>()((set, get) => ({
   },
 
   updateAccount: async (token, id, data) => {
+    if (get().demoMode) {
+      const now = new Date().toISOString();
+      set((s) => ({ accounts: s.accounts.map((a) => a.id === id ? { ...a, ...data, updatedAt: now } : a) }));
+      return;
+    }
     try {
       const updated = await api.updateAccount(token, id, data);
       set((s) => ({ accounts: s.accounts.map((a) => (a.id === id ? updated : a)) }));
@@ -85,6 +105,13 @@ export const useAccountStore = create<AccountStore>()((set, get) => ({
   },
 
   deleteAccount: async (token, id) => {
+    if (get().demoMode) {
+      set((s) => ({
+        accounts: s.accounts.filter((a) => a.id !== id),
+        payments: s.payments.filter((p) => p.accountId !== id),
+      }));
+      return;
+    }
     try {
       await api.deleteAccount(token, id);
       set((s) => ({
@@ -99,14 +126,7 @@ export const useAccountStore = create<AccountStore>()((set, get) => ({
 
   recordPayment: async (token, accountId, amount, date, note = '') => {
     const account = get().accounts.find((a) => a.id === accountId);
-    try {
-      const payment = await api.createPayment(token, {
-        id: generateId(),
-        accountId,
-        amount,
-        date,
-        note,
-      });
+    const applyPayment = (payment: Payment) => {
       set((s) => ({
         payments: [...s.payments, payment],
         accounts: s.accounts.map((a) => {
@@ -127,9 +147,16 @@ export const useAccountStore = create<AccountStore>()((set, get) => ({
           };
         }),
       }));
-      if (account) {
-        get().toast(`Payment of ${formatCurrency(amount)} recorded for ${account.name}`);
-      }
+      if (account) get().toast(`Payment of ${formatCurrency(amount)} recorded for ${account.name}`);
+    };
+
+    if (get().demoMode) {
+      applyPayment({ id: generateId(), accountId, amount, date, note });
+      return;
+    }
+    try {
+      const payment = await api.createPayment(token, { id: generateId(), accountId, amount, date, note });
+      applyPayment(payment);
     } catch (err) {
       console.error('[recordPayment]', err);
       get().toast(err instanceof Error ? err.message : 'Failed to record payment', 'error');
@@ -137,10 +164,8 @@ export const useAccountStore = create<AccountStore>()((set, get) => ({
   },
 
   updatePayment: async (token, id, updates) => {
-    try {
-      const updated = await api.updatePayment(token, id, updates);
-      // If amount changed, adjust account balance in local state too
-      const old = get().payments.find((p) => p.id === id);
+    const old = get().payments.find((p) => p.id === id);
+    const applyUpdate = (updated: Payment) => {
       set((s) => ({
         payments: s.payments.map((p) => (p.id === id ? updated : p)),
         accounts: updates.amount !== undefined && old
@@ -151,6 +176,15 @@ export const useAccountStore = create<AccountStore>()((set, get) => ({
             })
           : s.accounts,
       }));
+    };
+
+    if (get().demoMode) {
+      if (old) applyUpdate({ ...old, ...updates });
+      return;
+    }
+    try {
+      const updated = await api.updatePayment(token, id, updates);
+      applyUpdate(updated);
     } catch (err) {
       console.error('[updatePayment]', err);
       get().toast(err instanceof Error ? err.message : 'Failed to update payment', 'error');
@@ -158,6 +192,10 @@ export const useAccountStore = create<AccountStore>()((set, get) => ({
   },
 
   deletePayment: async (token, id) => {
+    if (get().demoMode) {
+      set((s) => ({ payments: s.payments.filter((p) => p.id !== id) }));
+      return;
+    }
     try {
       await api.deletePayment(token, id);
       set((s) => ({ payments: s.payments.filter((p) => p.id !== id) }));

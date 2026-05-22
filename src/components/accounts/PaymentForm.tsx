@@ -91,9 +91,9 @@ export function PaymentForm({ defaultAccountId, defaultAmount, onClose }: Props)
                   fontWeight: 500,
                   padding: '4px 10px',
                   borderRadius: 999,
-                  border: amount === q.value.toFixed(2) ? '1.5px solid var(--ink)' : '1px solid var(--border)',
-                  background: amount === q.value.toFixed(2) ? 'var(--ink)' : 'var(--surface)',
-                  color: amount === q.value.toFixed(2) ? '#fff' : 'var(--ink-2)',
+                  border: amount === q.value.toFixed(2) ? '1.5px solid var(--accent)' : '1px solid var(--border)',
+                  background: amount === q.value.toFixed(2) ? 'var(--accent)' : 'rgba(0,0,0,0.2)',
+                  color: 'var(--ink-2)',
                   cursor: 'pointer',
                   transition: 'all 0.12s',
                 }}

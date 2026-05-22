@@ -92,61 +92,67 @@ export function calculatePayoff(
   const totalMin = accounts.reduce((s, a) => s + a.minimumDue, 0);
   const budget = totalMin + extraPayment;
 
-  const debts = accounts.map((a, i) => ({
+  // Lock in priority order once based on initial values — never re-sort mid-simulation
+  const sorted = [...accounts].sort((a, b) =>
+    strategy === 'avalanche'
+      ? b.interestRate - a.interestRate
+      : a.totalDue - b.totalDue
+  );
+
+  const debts = sorted.map((a, i) => ({
     ...a,
     balance: a.totalDue,
     rate: a.interestRate / 100 / 12,
     minPayment: a.minimumDue,
-    order: i,
-    monthsPaid: 0,
+    order: i + 1,
     interestPaid: 0,
   }));
 
-  const results: PayoffAccountResult[] = [];
+  const paidOff: PayoffAccountResult[] = [];
   const monthly: { month: number; balance: number }[] = [];
   let month = 0;
   const MAX_MONTHS = 600;
 
-  while (debts.some((d) => d.balance > 0) && month < MAX_MONTHS) {
+  while (debts.some((d) => d.balance > 0.01) && month < MAX_MONTHS) {
     month++;
-    // sort for focus account
-    const active = debts.filter((d) => d.balance > 0);
-    if (strategy === 'avalanche') active.sort((a, b) => b.interestRate - a.interestRate);
-    else active.sort((a, b) => a.balance - b.balance);
+    const active = debts.filter((d) => d.balance > 0.01);
 
-    // apply interest
+    // Apply monthly interest
     for (const d of active) {
-      d.interestPaid += d.balance * d.rate;
-      d.balance = d.balance * (1 + d.rate);
+      const interest = d.balance * d.rate;
+      d.interestPaid += interest;
+      d.balance += interest;
     }
 
-    // pay minimums
+    // Pay minimums on all active debts; freed-up minimums roll into available budget
     let remaining = budget;
     for (const d of active) {
-      const pay = Math.min(d.balance, d.minPayment);
+      const pay = Math.min(d.balance, Math.min(d.minPayment, remaining));
       d.balance -= pay;
       remaining -= pay;
-      if (d.balance <= 0) {
-        d.balance = 0;
-        results.push({ id: d.id, name: d.name, months: month, interestPaid: d.interestPaid, order: results.length + 1 });
+      if (d.balance <= 0.01) d.balance = 0;
+    }
+
+    // Apply any remaining budget to the highest-priority active debt (focus)
+    if (remaining > 0) {
+      const focus = debts.find((d) => d.balance > 0);
+      if (focus) {
+        focus.balance = Math.max(0, focus.balance - remaining);
       }
     }
 
-    // apply extra to focus account
-    const focus = active.find((d) => d.balance > 0);
-    if (focus && remaining > 0) {
-      const pay = Math.min(focus.balance, remaining);
-      focus.balance -= pay;
-      if (focus.balance <= 0) {
-        focus.balance = 0;
-        if (!results.find((r) => r.id === focus.id)) {
-          results.push({ id: focus.id, name: focus.name, months: month, interestPaid: focus.interestPaid, order: results.length + 1 });
-        }
+    // Record any debts that hit zero this month
+    for (const d of debts) {
+      if (d.balance === 0 && !paidOff.find((r) => r.id === d.id)) {
+        paidOff.push({ id: d.id, name: d.name, months: month, interestPaid: d.interestPaid, order: d.order });
       }
     }
 
     monthly.push({ month, balance: debts.reduce((s, d) => s + d.balance, 0) });
   }
+
+  // Return accounts in locked-in priority order
+  const results = [...paidOff].sort((a, b) => a.order - b.order);
 
   const totalInterest = debts.reduce((s, d) => s + d.interestPaid, 0);
   const debtFreeDate = new Date();

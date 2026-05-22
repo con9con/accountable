@@ -141,8 +141,12 @@ function CardActions({ account: a, expanded, onToggleExpanded, onPay, onEdit, on
         {open && (
           <div style={{
             position: 'absolute', bottom: '100%', right: 0, marginBottom: 6,
-            background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: 'var(--r-md)', boxShadow: 'var(--shadow-lg)',
+            background: 'rgba(30, 27, 75, 0.95)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            borderRadius: 'var(--r-md)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)',
             minWidth: 170, zIndex: 20, overflow: 'hidden',
           }}>
             {menuItems.map((item) => (
@@ -156,7 +160,7 @@ function CardActions({ account: a, expanded, onToggleExpanded, onPay, onEdit, on
                   color: item.danger ? 'var(--danger)' : 'var(--ink-2)',
                   transition: 'background 0.1s',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = item.danger ? 'var(--danger-2)' : 'var(--surface-2)')}
+                onMouseEnter={(e) => (e.currentTarget.style.background = item.danger ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.08)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
               >
                 <Icon name={item.icon} size={14} />
